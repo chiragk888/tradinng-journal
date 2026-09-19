@@ -1,1332 +1,536 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nifty 50 Option Trading Journal, Analytics Terminal & Playbook</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkbg: '#0b0f19',
-                        panelbg: '#111827',
-                        cardbg: '#1e293b',
-                        neonGreen: '#10b981',
-                        neonRed: '#ef4444',
-                        neonCyan: '#06b6d4',
-                        neonPurple: '#8b5cf6',
-                        neonYellow: '#f59e0b'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Google Fonts Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            background-color: #0b0f19;
-            color: #f3f4f6;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-        }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #0b0f19; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .tab-active {
-            border-bottom: 2px solid #06b6d4;
-            color: #06b6d4;
-            background-color: rgba(6, 182, 212, 0.08);
-        }
-        .gradient-card {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(17, 24, 39, 0.9) 100%);
-        }
-        .modal-backdrop {
-            background-color: rgba(11, 15, 25, 0.85);
-            backdrop-filter: blur(6px);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nifty 50 Intraday Trading Dashboard</title>
+  <!-- MathJax for rendering LaTeX formulas -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    :root {
+      --bg-color: #121418;
+      --card-bg: #1e222d;
+      --border-color: #2a2e39;
+      --accent-color: #2962ff;
+      --text-color: #d1d4dc;
+      --text-muted: #787b86;
+      --green: #089981;
+      --red: #f23645;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Left Bar - Navigation Buttons Only */
+    .sidebar {
+      width: 260px;
+      background-color: var(--card-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 12px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-btn {
+      background-color: transparent;
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      text-align: left;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-btn:hover, .sidebar-btn.active {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+      color: #ffffff;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .section-header {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .hint-text {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    input, select, textarea {
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      width: 100%;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .read-only-field {
+      background-color: rgba(42, 46, 57, 0.4);
+      padding: 10px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      font-size: 0.88rem;
+      color: var(--text-color);
+    }
+
+    /* Table Styling */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    th {
+      background-color: var(--bg-color);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    td input, td select {
+      padding: 6px 8px;
+      font-size: 0.85rem;
+    }
+
+    /* Checklist Styling */
+    .checklist-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--accent-color);
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-white">
+<body>
 
-    <!-- Top Header -->
-    <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-40 backdrop-blur-md px-4 py-3">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <!-- Brand & Badge -->
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-emerald-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 font-bold text-xl">
-                    <i class="fa-solid fa-arrow-trend-up font-mono"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-xl font-extrabold tracking-tight text-white">NIFTY 50 <span class="text-cyan-400">Terminal</span></h1>
-                        <span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded bg-cyan-950 text-cyan-400 border border-cyan-800/50">
-                            Pro Journal & Playbook
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-400">Option Analytics, Tax Calculator & Execution Playbook</p>
-                </div>
-            </div>
+  <!-- Left Sidebar: Navigation Buttons Only -->
+  <div class="sidebar">
+    <button class="sidebar-btn active">🌅 Pre-Market Analysis & Log</button>
+    <button class="sidebar-btn">📝 Post-Market Analysis & Log</button>
+    <button class="sidebar-btn">📖 Strategy Playbook</button>
+    <button class="sidebar-btn">⚙️ Account & Risk Settings</button>
+  </div>
 
-            <!-- Global Quick Stats & Actions -->
-            <div class="flex flex-wrap items-center gap-3 text-xs">
-                <div class="bg-slate-800/90 border border-slate-700/80 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                    <span class="text-slate-400">Net P&L:</span>
-                    <span id="headerNetPnl" class="font-mono font-bold text-sm text-emerald-400">₹0.00</span>
-                </div>
-                <div class="bg-slate-800/90 border border-slate-700/80 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                    <span class="text-slate-400">Win Rate:</span>
-                    <span id="headerWinRate" class="font-mono font-bold text-sm text-cyan-400">0%</span>
-                </div>
+  <!-- Main Dashboard View Area -->
+  <div class="main-content">
 
-                <div class="flex items-center gap-2">
-                    <button onclick="openTradeModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg shadow-md transition flex items-center gap-1.5 text-xs">
-                        <i class="fa-solid fa-plus"></i> Log Trade
-                    </button>
-                    <button onclick="loadSampleData()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 py-1.5 rounded-lg transition text-xs" title="Load Sample Trades">
-                        <i class="fa-solid fa-database text-cyan-400"></i> Sample
-                    </button>
-                    <button onclick="exportJSON()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1.5 rounded-lg transition text-xs" title="Export JSON">
-                        <i class="fa-solid fa-download"></i>
-                    </button>
-                    <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1.5 rounded-lg transition text-xs cursor-pointer" title="Import JSON">
-                        <i class="fa-solid fa-upload"></i>
-                        <input type="file" id="importFileInput" onchange="importJSON(event)" class="hidden" accept=".json">
-                    </label>
-                    <button onclick="resetData()" class="bg-slate-800 hover:bg-rose-900/50 text-rose-400 border border-slate-700 hover:border-rose-700 px-2 py-1.5 rounded-lg transition text-xs" title="Reset All Data">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-            </div>
+    <!-- PRE-MARKET SECTION -->
+    <div id="pre-market-section">
+      <div class="section-header">🌅 Pre-Market Analysis & Log</div>
+
+      <!-- Desk Control & Market Parameters -->
+      <div class="card">
+        <div class="card-title">1. Desk Control & Market Parameters</div>
+        <div class="grid-3" style="margin-bottom: 16px;">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date">
+          </div>
+          <div class="form-group">
+            <label>India VIX[cite: 1, 3]</label>
+            <input type="number" step="0.01" placeholder="e.g. 13.5">
+            <span class="hint-text">VIX &gt; 15: Wide swings / ORB &amp; Sweeps | VIX &lt; 12: Tight ranges / BB Squeeze[cite: 1]</span>
+          </div>
+          <div class="form-group">
+            <label>CPR Classification[cite: 1, 3]</label>
+            <select>
+              <option value="">Select CPR Width</option>
+              <option value="narrow">Narrow (Trend Expansion)[cite: 1, 3]</option>
+              <option value="wide">Wide (Range-Bound)[cite: 1, 3]</option>
+            </select>
+          </div>
         </div>
-    </header>
 
-    <!-- Navigation Tabs -->
-    <nav class="bg-slate-900/60 border-b border-slate-800 sticky top-[65px] z-30 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto flex items-center overflow-x-auto text-sm font-medium text-slate-400">
-            <button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="px-5 py-3 flex items-center gap-2 whitespace-nowrap tab-active transition">
-                <i class="fa-solid fa-chart-line text-cyan-400"></i> Analytics Dashboard
-            </button>
-            <button id="tab-btn-logbook" onclick="switchTab('logbook')" class="px-5 py-3 flex items-center gap-2 whitespace-nowrap hover:text-slate-200 transition">
-                <i class="fa-solid fa-list-check text-emerald-400"></i> Trade Logbook (<span id="tabTradeCount">0</span>)
-            </button>
-            <button id="tab-btn-playbook" onclick="switchTab('playbook')" class="px-5 py-3 flex items-center gap-2 whitespace-nowrap hover:text-slate-200 transition">
-                <i class="fa-solid fa-book-open-reader text-purple-400"></i> Strategy Playbook
-            </button>
-            <button id="tab-btn-calculator" onclick="switchTab('calculator')" class="px-5 py-3 flex items-center gap-2 whitespace-nowrap hover:text-slate-200 transition">
-                <i class="fa-solid fa-calculator text-amber-400"></i> Risk & Size Calculator
-            </button>
-            <button id="tab-btn-checklist" onclick="switchTab('checklist')" class="px-5 py-3 flex items-center gap-2 whitespace-nowrap hover:text-slate-200 transition">
-                <i class="fa-solid fa-clipboard-check text-rose-400"></i> Pre-Trade Checklist
-            </button>
+        <div class="grid-3" style="margin-bottom: 16px;">
+          <div class="form-group">
+            <label>TC Level[cite: 1]</label>
+            <input type="number" step="0.05" placeholder="Top Central Pivot">
+          </div>
+          <div class="form-group">
+            <label>Pivot (P)[cite: 1]</label>
+            <input type="number" step="0.05" placeholder="Central Pivot">
+          </div>
+          <div class="form-group">
+            <label>BC Level[cite: 1]</label>
+            <input type="number" step="0.05" placeholder="Bottom Central Pivot">
+          </div>
         </div>
-    </nav>
 
-    <!-- Main Content Container -->
-    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
-
-        <!-- ==================== TAB 1: ANALYTICS DASHBOARD ==================== -->
-        <section id="tab-dashboard" class="space-y-6">
-            <!-- Executive KPI Cards Grid -->
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                <div class="gradient-card border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
-                    <span class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Net Realized P&L</span>
-                    <div id="kpiNetPnl" class="text-lg font-extrabold font-mono text-emerald-400 mt-1">₹0.00</div>
-                    <span class="text-[10px] text-slate-500">Gross P&L - Taxes</span>
-                </div>
-                <div class="gradient-card border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
-                    <span class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Win Rate %</span>
-                    <div id="kpiWinRate" class="text-lg font-extrabold font-mono text-cyan-400 mt-1">0%</div>
-                    <span id="kpiWinRateSub" class="text-[10px] text-slate-500">0 W / 0 L</span>
-                </div>
-                <div class="gradient-card border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
-                    <span class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Profit Factor</span>
-                    <div id="kpiProfitFactor" class="text-lg font-extrabold font-mono text-purple-400 mt-1">0.00</div>
-                    <span class="text-[10px] text-slate-500">Gross Win / Loss</span>
-                </div>
-                <div class="gradient-card border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
-                    <span class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Expectancy / Trade</span>
-                    <div id="kpiExpectancy" class="text-lg font-extrabold font-mono text-emerald-400 mt-1">₹0.00</div>
-                    <span class="text-[10px] text-slate-500">Avg Return per trade</span>
-                </div>
-                <div class="gradient-card border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
-                    <span class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Max Drawdown</span>
-                    <div id="kpiMaxDrawdown" class="text-lg font-extrabold font-mono text-rose-400 mt-1">₹0.00</div>
-                    <span class="text-[10px] text-slate-500">Peak to Trough</span>
-                </div>
-                <div class="gradient-card border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
-                    <span class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Total Taxes & Fees</span>
-                    <div id="kpiCharges" class="text-lg font-extrabold font-mono text-amber-400 mt-1">₹0.00</div>
-                    <span class="text-[10px] text-slate-500">STT, GST & Exchange</span>
-                </div>
-                <div class="gradient-card border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
-                    <span class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Best / Worst</span>
-                    <div id="kpiBestWorst" class="text-xs font-mono font-bold mt-1 text-slate-200">
-                        <span class="text-emerald-400">+₹0</span> / <span class="text-rose-400">-₹0</span>
-                    </div>
-                    <span class="text-[10px] text-slate-500">Single trade max</span>
-                </div>
-            </div>
-
-            <!-- Charts Row 1 -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
-                                <i class="fa-solid fa-chart-area text-cyan-400"></i> Cumulative Equity Curve
-                            </h2>
-                            <p class="text-xs text-slate-400">Net capital growth over executed trades</p>
-                        </div>
-                    </div>
-                    <div class="h-72 relative w-full">
-                        <canvas id="equityChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
-                                <i class="fa-solid fa-chess-knight text-purple-400"></i> Strategy Performance
-                            </h2>
-                            <p class="text-xs text-slate-400">Net Realized P&L by Playbook Setup</p>
-                        </div>
-                    </div>
-                    <div class="h-72 relative w-full">
-                        <canvas id="strategyChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts Row 2 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <h2 class="text-sm font-bold text-white mb-1 flex items-center gap-2">
-                        <i class="fa-solid fa-pie-chart text-emerald-400"></i> CE vs PE & Moneyness
-                    </h2>
-                    <p class="text-xs text-slate-400 mb-3">Profitability across Call/Put & ITM/ATM/OTM</p>
-                    <div class="h-56 relative w-full">
-                        <canvas id="typeMoneynessChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <h2 class="text-sm font-bold text-white mb-1 flex items-center gap-2">
-                        <i class="fa-solid fa-brain text-amber-400"></i> Emotional State Impact
-                    </h2>
-                    <p class="text-xs text-slate-400 mb-3">P&L distribution by execution mindset</p>
-                    <div class="h-56 relative w-full">
-                        <canvas id="emotionChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                    <h2 class="text-sm font-bold text-white mb-1 flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-day text-rose-400"></i> 0-DTE Expiry vs Non-Expiry
-                    </h2>
-                    <p class="text-xs text-slate-400 mb-3">Thursday 0-DTE performance breakdown</p>
-                    <div class="h-56 relative w-full">
-                        <canvas id="expiryChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- ==================== TAB 2: TRADE LOGBOOK ==================== -->
-        <section id="tab-logbook" class="hidden space-y-4">
-            <!-- Filter Toolbar -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="relative w-full md:w-72">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
-                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Search strike, notes, tags..." class="w-full bg-slate-950 border border-slate-700/80 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
-                </div>
-
-                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                    <select id="filterStrategy" onchange="applyFilters()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
-                        <option value="ALL">All Strategies</option>
-                        <option value="Directional Option Buying">Directional Buying</option>
-                        <option value="Bull Call Spread">Bull Call Spread</option>
-                        <option value="Bear Put Spread">Bear Put Spread</option>
-                        <option value="Short Straddle">Short Straddle (0-DTE)</option>
-                        <option value="Iron Fly">Iron Fly</option>
-                        <option value="Liquidity Sweep & FVG">Liquidity Sweep & FVG</option>
-                        <option value="Custom / Other">Custom / Other</option>
-                    </select>
-
-                    <select id="filterOutcome" onchange="applyFilters()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
-                        <option value="ALL">All Outcomes</option>
-                        <option value="WIN">Wins Only</option>
-                        <option value="LOSS">Losses Only</option>
-                    </select>
-
-                    <select id="filterOptionType" onchange="applyFilters()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
-                        <option value="ALL">All Options (CE/PE)</option>
-                        <option value="CE">CE (Call)</option>
-                        <option value="PE">PE (Put)</option>
-                    </select>
-
-                    <select id="filterMoneyness" onchange="applyFilters()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
-                        <option value="ALL">All Moneyness</option>
-                        <option value="ITM">ITM</option>
-                        <option value="ATM">ATM</option>
-                        <option value="OTM">OTM</option>
-                    </select>
-
-                    <select id="filterExpiry" onchange="applyFilters()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
-                        <option value="ALL">All Sessions</option>
-                        <option value="0-DTE Expiry">0-DTE Expiry</option>
-                        <option value="Non-Expiry">Non-Expiry</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Logbook Table -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="bg-slate-950/80 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
-                                <th class="p-3">Date</th>
-                                <th class="p-3">Strategy</th>
-                                <th class="p-3">Strike & Type</th>
-                                <th class="p-3">Moneyness</th>
-                                <th class="p-3 text-right">Lots (Qty)</th>
-                                <th class="p-3 text-right">Entry (₹)</th>
-                                <th class="p-3 text-right">Exit (₹)</th>
-                                <th class="p-3 text-right">Gross P&L</th>
-                                <th class="p-3 text-right">Charges</th>
-                                <th class="p-3 text-right">Net P&L</th>
-                                <th class="p-3 text-center">Emotion</th>
-                                <th class="p-3 text-center">Grade</th>
-                                <th class="p-3 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tradeTableBody" class="divide-y divide-slate-800/60 font-mono text-slate-200">
-                        </tbody>
-                    </table>
-                </div>
-
-                <div id="emptyTableMessage" class="hidden py-12 text-center text-slate-500">
-                    <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-600"></i>
-                    <p class="text-sm font-medium">No trades recorded matching these filters.</p>
-                </div>
-
-                <div class="bg-slate-950/60 p-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                    <div>Showing <span id="displayedTradeCount" class="font-bold text-slate-200">0</span> trades</div>
-                    <div class="flex items-center gap-2">
-                        <span>Page P&L:</span>
-                        <span id="filteredNetPnl" class="font-bold font-mono text-emerald-400">₹0.00</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- ==================== TAB 3: STRATEGY PLAYBOOK ==================== -->
-        <section id="tab-playbook" class="hidden space-y-6">
-            <div class="bg-gradient-to-r from-purple-900/30 via-slate-900 to-slate-900 border border-purple-800/40 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-book-bookmark text-purple-400"></i> Nifty 50 Strategy Playbook & Execution Framework
-                    </h2>
-                    <p class="text-xs text-slate-300 mt-1 max-w-2xl">
-                        Standardized setup rules, strike selection logic, VIX filters, and stop-loss protocols. Click "Log Trade with Setup" to prefill entry parameters!
-                    </p>
-                </div>
-            </div>
-
-            <!-- Strategy Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <!-- Strategy 1 -->
-                <div class="bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl p-5 flex flex-col justify-between transition">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 text-[10px] font-bold">Directional Buying</span>
-                            <span class="text-xs font-mono text-slate-400">VIX: 13.5–18.0</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2">Intraday Momentum Buying</h3>
-                        <p class="text-xs text-slate-400 mb-4">Fast expansion trades targeting liquidity breaks or trend continuation above/below VWAP.</p>
-                        
-                        <ul class="text-xs space-y-2 text-slate-300 mb-4 font-mono">
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i> Strike: ATM or 1-Strike ITM (Delta ~0.55)</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i> SL: 18-22 Nifty Spot Points (~12% premium)</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i> Target: 35-50 Spot Points (1:2+ Risk-Reward)</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i> Time Window: 09:20-10:30 AM or 01:15-03:00 PM</li>
-                        </ul>
-                    </div>
-                    <button onclick="prefillStrategy('Directional Option Buying')" class="w-full bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 font-semibold py-2 rounded-lg text-xs transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-bolt"></i> Log Trade with Setup
-                    </button>
-                </div>
-
-                <!-- Strategy 2 -->
-                <div class="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl p-5 flex flex-col justify-between transition">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold">Vertical Spread</span>
-                            <span class="text-xs font-mono text-slate-400">VIX: 11.0–15.0</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2">Bull Call / Bear Put Spread</h3>
-                        <p class="text-xs text-slate-400 mb-4">Defined-risk directional setup that lowers capital requirements and hedges against IV crush.</p>
-                        
-                        <ul class="text-xs space-y-2 text-slate-300 mb-4 font-mono">
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i> Buy ATM + Sell OTM (+150/200 Pts)</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i> Max Debit: &le; 35% of Spread Width</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i> SL: 50% Net Debit Paid</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i> Exit: 75%-80% of Max Theoretical Profit</li>
-                        </ul>
-                    </div>
-                    <button onclick="prefillStrategy('Bull Call Spread')" class="w-full bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 font-semibold py-2 rounded-lg text-xs transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-bolt"></i> Log Trade with Setup
-                    </button>
-                </div>
-
-                <!-- Strategy 3 -->
-                <div class="bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-xl p-5 flex flex-col justify-between transition">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 text-[10px] font-bold">0-DTE Expiry</span>
-                            <span class="text-xs font-mono text-slate-400">VIX: 13.5–17.0</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2">Thursday Short Straddle</h3>
-                        <p class="text-xs text-slate-400 mb-4">Non-directional income capture exploiting rapid Thursday theta decay in range-bound markets.</p>
-                        
-                        <ul class="text-xs space-y-2 text-slate-300 mb-4 font-mono">
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-amber-400 mt-0.5"></i> Sell ATM CE + Sell ATM PE (09:20 AM Entry)</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-amber-400 mt-0.5"></i> SL: +25% Hard Stop on Individual Leg</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-amber-400 mt-0.5"></i> Combined SL: 20% Portfolio Cap</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-amber-400 mt-0.5"></i> Profit Target: 50% Decay of Combined Credit</li>
-                        </ul>
-                    </div>
-                    <button onclick="prefillStrategy('Short Straddle')" class="w-full bg-amber-950 hover:bg-amber-900 text-amber-400 border border-amber-800 font-semibold py-2 rounded-lg text-xs transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-bolt"></i> Log Trade with Setup
-                    </button>
-                </div>
-
-                <!-- Strategy 4 -->
-                <div class="bg-slate-900 border border-slate-800 hover:border-purple-500/50 rounded-xl p-5 flex flex-col justify-between transition">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 rounded bg-purple-950 text-purple-400 border border-purple-800 text-[10px] font-bold">Defined-Risk Neutral</span>
-                            <span class="text-xs font-mono text-slate-400">VIX: &gt; 14.0</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2">Iron Fly (Wings Protection)</h3>
-                        <p class="text-xs text-slate-400 mb-4">Combines short straddle credit with outer long protective options to cap tail risk.</p>
-                        
-                        <ul class="text-xs space-y-2 text-slate-300 mb-4 font-mono">
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-purple-400 mt-0.5"></i> Sell ATM Straddle + Buy Wings (&plusmn;250 Pts)</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-purple-400 mt-0.5"></i> Breakeven: ATM Strike &plusmn; Net Credit</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-purple-400 mt-0.5"></i> Target: 35%-50% Net Credit Captured</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-purple-400 mt-0.5"></i> Invalidation: 15-min close beyond Breakeven</li>
-                        </ul>
-                    </div>
-                    <button onclick="prefillStrategy('Iron Fly')" class="w-full bg-purple-950 hover:bg-purple-900 text-purple-400 border border-purple-800 font-semibold py-2 rounded-lg text-xs transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-bolt"></i> Log Trade with Setup
-                    </button>
-                </div>
-
-                <!-- Strategy 5 -->
-                <div class="bg-slate-900 border border-slate-800 hover:border-rose-500/50 rounded-xl p-5 flex flex-col justify-between transition">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 text-[10px] font-bold">Price Action Reversal</span>
-                            <span class="text-xs font-mono text-slate-400">Any VIX</span>
-                        </div>
-                        <h3 class="text-base font-bold text-white mb-2">Liquidity Sweep & FVG</h3>
-                        <p class="text-xs text-slate-400 mb-4">High-probability intraday trade catching institutional sweeps above PDH/PDL into imbalances.</p>
-                        
-                        <ul class="text-xs space-y-2 text-slate-300 mb-4 font-mono">
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-rose-400 mt-0.5"></i> Sweep PDH/PDL + Rejection Candle</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-rose-400 mt-0.5"></i> Entry: Limit order at 50% FVG Retracement</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-rose-400 mt-0.5"></i> SL: 2 Pts beyond extreme sweep wick</li>
-                            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-rose-400 mt-0.5"></i> Target: Opposite Liquidity Pool (1:2.5+ RR)</li>
-                        </ul>
-                    </div>
-                    <button onclick="prefillStrategy('Liquidity Sweep & FVG')" class="w-full bg-rose-950 hover:bg-rose-900 text-rose-400 border border-rose-800 font-semibold py-2 rounded-lg text-xs transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-bolt"></i> Log Trade with Setup
-                    </button>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- ==================== TAB 4: RISK CALCULATOR ==================== -->
-        <section id="tab-calculator" class="hidden space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Calculator Inputs Card -->
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-                    <div class="border-b border-slate-800 pb-3">
-                        <h2 class="text-base font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-calculator text-amber-400"></i> Nifty Option Position Size & Risk Calculator
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-1">Compute exact lot allocation based on capital risk parameters</p>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                        <div>
-                            <label class="block text-slate-400 mb-1 font-medium">Total Trading Capital (₹)</label>
-                            <input type="number" id="calcCapital" value="200000" oninput="calculateRiskSize()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-amber-400 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-slate-400 mb-1 font-medium">Risk Per Trade (%)</label>
-                            <input type="number" id="calcRiskPct" value="2" step="0.5" oninput="calculateRiskSize()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-amber-400 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-slate-400 mb-1 font-medium">Option Stop-Loss (Points)</label>
-                            <input type="number" id="calcSlPoints" value="15" oninput="calculateRiskSize()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-amber-400 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-slate-400 mb-1 font-medium">Option Premium Price (₹)</label>
-                            <input type="number" id="calcOptionPrice" value="110" oninput="calculateRiskSize()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-amber-400 focus:outline-none">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-slate-400 mb-1 font-medium">Nifty Lot Size Selection</label>
-                            <select id="calcLotSize" onchange="calculateRiskSize()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-amber-400 focus:outline-none">
-                                <option value="25">25 Shares per Lot (Current Standard)</option>
-                                <option value="50">50 Shares per Lot (Legacy Standard)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Calculator Output Card -->
-                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4">
-                    <div>
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                            <i class="fa-solid fa-gauge-high text-cyan-400"></i> Calculated Risk & Allocation Parameters
-                        </h3>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
-                                <span class="text-[11px] text-slate-400 block">Max Allowed Risk (₹)</span>
-                                <span id="resMaxRisk" class="text-xl font-bold font-mono text-rose-400 mt-1 block">₹4,000</span>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
-                                <span class="text-[11px] text-slate-400 block">Optimal Lots Count</span>
-                                <span id="resLotCount" class="text-xl font-bold font-mono text-emerald-400 mt-1 block">10 Lots</span>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
-                                <span class="text-[11px] text-slate-400 block">Total Quantity (Shares)</span>
-                                <span id="resQty" class="text-xl font-bold font-mono text-cyan-400 mt-1 block">250 Qty</span>
-                            </div>
-                            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
-                                <span class="text-[11px] text-slate-400 block">Capital Required (₹)</span>
-                                <span id="resCapitalNeeded" class="text-xl font-bold font-mono text-purple-400 mt-1 block">₹27,500</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-950/80 border border-amber-900/40 rounded-lg p-3 text-xs text-slate-300">
-                        <div class="flex items-center gap-2 text-amber-400 font-bold mb-1">
-                            <i class="fa-solid fa-triangle-exclamation"></i> Risk Management Rule
-                        </div>
-                        <p class="text-[11px] text-slate-400 leading-relaxed">
-                            Position sizing guarantees that hitting your stop-loss loses exactly <span id="resRiskPctText" class="text-white font-bold">2.0%</span> of total account equity. Never adjust stop-loss lower during an active trade.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- ==================== TAB 5: PRE-TRADE CHECKLIST ==================== -->
-        <section id="tab-checklist" class="hidden space-y-6">
-            <div class="max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
-                <div>
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-clipboard-check text-rose-400"></i> Pre-Trade Discipline & Readiness Verification
-                    </h2>
-                    <p class="text-xs text-slate-400 mt-1">Complete all 5 mandatory checks before executing orders in terminal</p>
-                </div>
-
-                <!-- Live Score Bar -->
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center justify-between gap-4">
-                    <div>
-                        <span class="text-xs text-slate-400 block">Readiness Score</span>
-                        <span id="chkScore" class="text-2xl font-extrabold font-mono text-rose-400">0%</span>
-                    </div>
-                    <div class="flex-1 max-w-md bg-slate-800 h-3 rounded-full overflow-hidden">
-                        <div id="chkBar" class="bg-rose-500 h-full w-0 transition-all duration-300"></div>
-                    </div>
-                    <span id="chkStatus" class="text-xs font-bold text-rose-400 uppercase tracking-wider">DO NOT TRADE</span>
-                </div>
-
-                <!-- Checkbox List -->
-                <div class="space-y-3">
-                    <label class="flex items-start gap-3 bg-slate-950 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl cursor-pointer transition">
-                        <input type="checkbox" id="chk1" onchange="updateChecklist()" class="mt-1 w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0">
-                        <div>
-                            <span class="text-xs font-bold text-white block">1. Trend & VWAP Alignment Verified</span>
-                            <span class="text-[11px] text-slate-400">Nifty Spot is cleanly trading above VWAP (for Calls) or below VWAP (for Puts).</span>
-                        </div>
-                    </label>
-
-                    <label class="flex items-start gap-3 bg-slate-950 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl cursor-pointer transition">
-                        <input type="checkbox" id="chk2" onchange="updateChecklist()" class="mt-1 w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0">
-                        <div>
-                            <span class="text-xs font-bold text-white block">2. Stop-Loss Set in Terminal Order</span>
-                            <span class="text-[11px] text-slate-400">Hard SL price is pre-calculated and will be placed immediately upon entry.</span>
-                        </div>
-                    </label>
-
-                    <label class="flex items-start gap-3 bg-slate-950 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl cursor-pointer transition">
-                        <input type="checkbox" id="chk3" onchange="updateChecklist()" class="mt-1 w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0">
-                        <div>
-                            <span class="text-xs font-bold text-white block">3. Position Size Within Capital Limits</span>
-                            <span class="text-[11px] text-slate-400">Lot size strictly adheres to maximum 2% capital risk rule.</span>
-                        </div>
-                    </label>
-
-                    <label class="flex items-start gap-3 bg-slate-950 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl cursor-pointer transition">
-                        <input type="checkbox" id="chk4" onchange="updateChecklist()" class="mt-1 w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0">
-                        <div>
-                            <span class="text-xs font-bold text-white block">4. No High-Impact News/Events Pending</span>
-                            <span class="text-[11px] text-slate-400">No RBI policy or major economic release scheduled within the next 30 minutes.</span>
-                        </div>
-                    </label>
-
-                    <label class="flex items-start gap-3 bg-slate-950 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl cursor-pointer transition">
-                        <input type="checkbox" id="chk5" onchange="updateChecklist()" class="mt-1 w-4 h-4 rounded border-slate-700 text-cyan-500 focus:ring-0">
-                        <div>
-                            <span class="text-xs font-bold text-white block">5. Calm & Disciplined Mindset</span>
-                            <span class="text-[11px] text-slate-400">Free from FOMO, revenge trading, or impulse bias.</span>
-                        </div>
-                    </label>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Modal Dialog for Adding / Editing Trades -->
-    <div id="tradeModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div class="p-4 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900 z-10">
-                <h3 id="modalTitle" class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-pen-to-square text-emerald-400"></i> Log Nifty Option Trade
-                </h3>
-                <button onclick="closeTradeModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-
-            <form id="tradeForm" onsubmit="saveTrade(event)" class="p-5 space-y-4 text-xs">
-                <input type="hidden" id="tradeIdInput">
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-slate-400 mb-1">Date & Time</label>
-                        <input type="datetime-local" id="inputDate" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyan-500 focus:outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Strategy / Setup</label>
-                        <select id="inputStrategy" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyan-500 focus:outline-none">
-                            <option value="Directional Option Buying">Directional Option Buying</option>
-                            <option value="Bull Call Spread">Bull Call Spread</option>
-                            <option value="Bear Put Spread">Bear Put Spread</option>
-                            <option value="Short Straddle">Short Straddle (0-DTE)</option>
-                            <option value="Iron Fly">Iron Fly</option>
-                            <option value="Liquidity Sweep & FVG">Liquidity Sweep & FVG</option>
-                            <option value="Custom / Other">Custom / Other</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Strike & Ticker (e.g. 24100 CE)</label>
-                        <input type="text" id="inputStrike" placeholder="24100 CE" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-cyan-500 focus:outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Option Type</label>
-                        <select id="inputOptionType" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyan-500 focus:outline-none">
-                            <option value="CE">CE (Call)</option>
-                            <option value="PE">PE (Put)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Moneyness</label>
-                        <select id="inputMoneyness" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyan-500 focus:outline-none">
-                            <option value="ATM">ATM (At The Money)</option>
-                            <option value="ITM">ITM (In The Money)</option>
-                            <option value="OTM">OTM (Out of The Money)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Expiry Type</label>
-                        <select id="inputExpiryType" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyan-500 focus:outline-none">
-                            <option value="Non-Expiry">Non-Expiry Session</option>
-                            <option value="0-DTE Expiry">0-DTE Thursday Expiry</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Action</label>
-                        <select id="inputAction" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyan-500 focus:outline-none">
-                            <option value="BUY">BUY (Long)</option>
-                            <option value="SELL">SELL (Short)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Number of Lots</label>
-                        <input type="number" id="inputLots" value="2" min="1" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-cyan-500 focus:outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Lot Size (Qty per Lot)</label>
-                        <input type="number" id="inputLotSize" value="25" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-cyan-500 focus:outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Entry Price (₹)</label>
-                        <input type="number" step="0.05" id="inputEntry" placeholder="120.50" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-cyan-500 focus:outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Exit Price (₹)</label>
-                        <input type="number" step="0.05" id="inputExit" placeholder="145.00" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:border-cyan-500 focus:outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Emotional State</label>
-                        <select id="inputEmotion" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyan-500 focus:outline-none">
-                            <option value="Disciplined">Disciplined / Calm</option>
-                            <option value="Anxious">Anxious / Hesitant</option>
-                            <option value="FOMO">FOMO Entry</option>
-                            <option value="Revenge">Revenge Trade</option>
-                            <option value="Overconfident">Overconfident</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">Execution Grade</label>
-                        <select id="inputGrade" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyan-500 focus:outline-none">
-                            <option value="A+">A+ (Perfect Execution)</option>
-                            <option value="A">A (Good Execution)</option>
-                            <option value="B">B (Minor Mistake)</option>
-                            <option value="C">C (Poor Execution)</option>
-                            <option value="F">F (Rule Violation)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-slate-400 mb-1">Trade Notes & Confluence</label>
-                    <textarea id="inputNotes" rows="2" placeholder="VWAP bounce, 15-min FVG sweep..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyan-500 focus:outline-none"></textarea>
-                </div>
-
-                <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
-                    <button type="button" onclick="closeTradeModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition font-medium">Cancel</button>
-                    <button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-500 transition shadow-lg shadow-emerald-600/20">Save Trade</button>
-                </div>
-            </form>
+        <div class="read-only-field" style="margin-bottom: 16px; text-align: center;">
+          CPR Formula: $$\text{Pivot} = \frac{\text{High} + \text{Low} + \text{Close}}{3}$$[cite: 1]
         </div>
+
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="form-group">
+            <label>Opening Bias[cite: 1, 3]</label>
+            <select>
+              <option value="">Select Opening Bias</option>
+              <option value="gap_up">Gap Up relative to PDH/PDL/CPR[cite: 1, 3]</option>
+              <option value="gap_down">Gap Down relative to PDH/PDL/CPR[cite: 1, 3]</option>
+              <option value="flat">Flat relative to PDH/PDL/CPR[cite: 1, 3]</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Global Cues / Macro[cite: 1]</label>
+            <select>
+              <option value="">Select Macro Sentiment</option>
+              <option value="bullish">Bullish (US Markets, GIFT Nifty, Crude Oil)[cite: 1]</option>
+              <option value="bearish">Bearish (US Markets, GIFT Nifty, Crude Oil)[cite: 1]</option>
+              <option value="neutral">Neutral (US Markets, GIFT Nifty, Crude Oil)[cite: 1]</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-4" style="margin-bottom: 16px;">
+          <div class="form-group">
+            <label>PDH (Previous Day High)[cite: 1]</label>
+            <input type="number" step="0.05" placeholder="Spot Level">
+          </div>
+          <div class="form-group">
+            <label>PDL (Previous Day Low)[cite: 1]</label>
+            <input type="number" step="0.05" placeholder="Spot Level">
+          </div>
+          <div class="form-group">
+            <label>PDC (Previous Day Close)[cite: 1]</label>
+            <input type="number" step="0.05" placeholder="Spot Level">
+          </div>
+          <div class="form-group">
+            <label>Round Numbers / Liquidity[cite: 1]</label>
+            <input type="text" placeholder="e.g. 24,000 / 24,500">
+          </div>
+        </div>
+
+        <div class="read-only-field">
+          <strong>Risk Parameters:</strong>
+          <ul style="margin-left: 20px; margin-top: 5px;">
+            <li><strong>Max Daily Loss Limit:</strong> 2 consecutive Stop-Loss hits[cite: 1, 3]</li>
+            <li><strong>Max Capital Allocation per Trade:</strong> 15% – 20% of account[cite: 1]</li>
+            <li><strong>Allowed Option Types:</strong> Strictly ATM or 1-Strike ITM[cite: 1, 3]</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Pre-Market Log Inputs -->
+      <div class="card">
+        <div class="card-title">2. Pre-Market Log Inputs</div>
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="form-group">
+            <label>Primary Strategy Focus[cite: 1, 3]</label>
+            <select>
+              <option value="">Select Setup Focus</option>
+              <option value="orb_vwap">ORB + VWAP[cite: 1, 3]</option>
+              <option value="cpr_accel">CPR Trend Acceleration[cite: 1, 3]</option>
+              <option value="sweep">Key Level Sweep[cite: 1, 3]</option>
+              <option value="ema_scalp">20 EMA Scalp[cite: 1, 3]</option>
+              <option value="bb_squeeze">BB Squeeze[cite: 1, 3]</option>
+              <option value="expiry_gamma">Expiry Gamma[cite: 1, 3]</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Planned Max Risk Per Trade (₹)</label>
+            <input type="number" placeholder="Enter amount">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Session Game Plan &amp; Notes[cite: 1]</label>
+          <textarea placeholder="Record key scenarios, execution triggers, and no-trade conditions before 9:15 AM..."></textarea>
+        </div>
+      </div>
     </div>
 
-    <!-- Application JavaScript Engine -->
-    <script>
-        // Storage Key
-        const STORAGE_KEY = 'nifty_journal_v2';
+    <!-- POST-MARKET SECTION -->
+    <div id="post-market-section">
+      <div class="section-header">📝 Post-Market Analysis & Log</div>
+
+      <!-- Session Summary & Metrics -->
+      <div class="card">
+        <div class="card-title">1. Session Summary &amp; Metrics</div>
+        <div class="grid-4">
+          <div class="form-group">
+            <label>Total Trades Executed[cite: 1, 3]</label>
+            <input type="number" placeholder="Max 2 SL hits allowed">
+          </div>
+          <div class="form-group">
+            <label>Daily Net P&amp;L (₹)[cite: 3]</label>
+            <input type="number" placeholder="Net profit/loss">
+          </div>
+          <div class="form-group">
+            <label>Win Rate / Realized R:R[cite: 3]</label>
+            <input type="text" placeholder="e.g. 100% / 1:2">
+          </div>
+          <div class="form-group">
+            <label>Daily Max Loss Limit Hit?[cite: 1, 3]</label>
+            <select>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trade Execution Log Table -->
+      <div class="card">
+        <div class="card-title">2. Trade Execution Log Table[cite: 3]</div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Trade #</th>
+                <th>Time</th>
+                <th>Strategy Setup[cite: 1, 3]</th>
+                <th>Strike &amp; Option Type[cite: 1, 3]</th>
+                <th>Entry Price</th>
+                <th>SL Price[cite: 1, 3]</th>
+                <th>Exit Price</th>
+                <th>R:R Target[cite: 1, 3]</th>
+                <th>Net P&amp;L</th>
+                <th>Rule Followed?[cite: 3]</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1</strong></td>
+                <td><input type="time" value="09:35"></td>
+                <td>
+                  <select>
+                    <option value="orb_vwap">ORB + VWAP[cite: 1, 3]</option>
+                    <option value="cpr_accel">CPR Trend Acceleration[cite: 1, 3]</option>
+                    <option value="sweep">Key Level Sweep[cite: 1, 3]</option>
+                    <option value="ema_scalp">20 EMA Scalp[cite: 1, 3]</option>
+                    <option value="bb_squeeze">BB Squeeze[cite: 1, 3]</option>
+                    <option value="expiry_gamma">Expiry Gamma[cite: 1, 3]</option>
+                  </select>
+                </td>
+                <td><input type="text" placeholder="e.g. ATM CE"></td>
+                <td><input type="number" placeholder="₹"></td>
+                <td><input type="number" placeholder="₹ (-15-20%)"></td>
+                <td><input type="number" placeholder="₹"></td>
+                <td><input type="text" placeholder="1:2"></td>
+                <td><input type="number" placeholder="₹"></td>
+                <td>
+                  <select>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>2</strong></td>
+                <td><input type="time" value="10:15"></td>
+                <td>
+                  <select>
+                    <option value="ema_scalp">20 EMA Scalp[cite: 1, 3]</option>
+                    <option value="orb_vwap">ORB + VWAP[cite: 1, 3]</option>
+                    <option value="cpr_accel">CPR Trend Acceleration[cite: 1, 3]</option>
+                    <option value="sweep">Key Level Sweep[cite: 1, 3]</option>
+                    <option value="bb_squeeze">BB Squeeze[cite: 1, 3]</option>
+                    <option value="expiry_gamma">Expiry Gamma[cite: 1, 3]</option>
+                  </select>
+                </td>
+                <td><input type="text" placeholder="e.g. ATM PE"></td>
+                <td><input type="number" placeholder="₹"></td>
+                <td><input type="number" placeholder="₹ (-15-20%)"></td>
+                <td><input type="number" placeholder="₹"></td>
+                <td><input type="text" placeholder="1:2"></td>
+                <td><input type="number" placeholder="₹"></td>
+                <td>
+                  <select>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Post-Market Execution Audit & Checklist -->
+      <div class="card">
+        <div class="card-title">3. Post-Market Execution Audit &amp; Checklist[cite: 3]</div>
+        <div class="grid-2">
+          <div>
+            <label style="color: #fff; font-size: 0.9rem;">Rule &amp; Risk Adherence[cite: 3]</label>
+            <div class="checklist-group">
+              <label class="checkbox-item">
+                <input type="checkbox"> Used strictly ATM or 1-Strike ITM options[cite: 1, 3]
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox"> Total allocation kept within 15%–20% account limit[cite: 1, 3]
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox"> Respected fixed 15%–20% premium SL or technical spot level[cite: 1, 3]
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox"> Avoided non-trending entries between 11:30 AM and 1:15 PM[cite: 1, 3]
+              </label>
+            </div>
+          </div>
+          <div>
+            <label style="color: #fff; font-size: 0.9rem;">Mistake Categorization Checklist[cite: 3]</label>
+            <div class="checklist-group">
+              <label class="checkbox-item">
+                <input type="checkbox"> FOMO Entry: Entered prior to signal candle close[cite: 1, 3]
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox"> Over-leveraging: Exceeded risk or allocation limits[cite: 1, 3]
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox"> No-Trade Window Violation: Traded mid-day chop[cite: 1, 3]
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox"> Revenge Trading / Chasing: Exceeded 2-trade SL limit[cite: 1, 3]
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Takeaways & Lessons -->
+      <div class="card">
+        <div class="card-title">4. Session Takeaways &amp; Lessons</div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label>What Went Well</label>
+            <textarea placeholder="Key successes, clean setups, good patience..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Execution Mistakes &amp; Adjustments[cite: 3]</label>
+            <textarea placeholder="Identify mistakes and actionable steps for improvement..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Closing Spot &amp; VWAP Notes[cite: 1, 3]</label>
+            <textarea placeholder="Record final Nifty spot close and VWAP for next session CPR calculation..."></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
 
-        // Global State
-        let trades = [];
-        let filteredTrades = [];
-        let charts = {};
-
-        // Sample Pre-loaded Trades Data
-        const SAMPLE_TRADES = [
-            { id: '1', date: '2026-09-03T09:45', strategy: 'Directional Option Buying', strike: '24100 CE', optionType: 'CE', moneyness: 'ITM', expiryType: '0-DTE Expiry', action: 'BUY', lots: 4, lotSize: 25, entryPrice: 115.00, exitPrice: 148.50, emotion: 'Disciplined', grade: 'A+', notes: 'Breakout above ORH with heavy volume.' },
-            { id: '2', date: '2026-09-04T13:30', strategy: 'Bull Call Spread', strike: '24150 CE', optionType: 'CE', moneyness: 'ATM', expiryType: 'Non-Expiry', action: 'BUY', lots: 6, lotSize: 25, entryPrice: 52.00, exitPrice: 78.00, emotion: 'Disciplined', grade: 'A', notes: 'Moderate uptrend target reached.' },
-            { id: '3', date: '2026-09-08T10:15', strategy: 'Liquidity Sweep & FVG', strike: '24050 PE', optionType: 'PE', moneyness: 'ITM', expiryType: 'Non-Expiry', action: 'BUY', lots: 4, lotSize: 25, entryPrice: 95.00, exitPrice: 72.00, emotion: 'Anxious', grade: 'C', notes: 'Took trade early before candle close.' },
-            { id: '4', date: '2026-09-10T09:25', strategy: 'Short Straddle', strike: '24200 CE/PE', optionType: 'CE', moneyness: 'ATM', expiryType: '0-DTE Expiry', action: 'SELL', lots: 4, lotSize: 25, entryPrice: 160.00, exitPrice: 90.00, emotion: 'Disciplined', grade: 'A+', notes: 'Classic Thursday decay.' },
-            { id: '5', date: '2026-09-11T14:10', strategy: 'Directional Option Buying', strike: '24250 PE', optionType: 'PE', moneyness: 'ATM', expiryType: 'Non-Expiry', action: 'BUY', lots: 4, lotSize: 25, entryPrice: 88.00, exitPrice: 65.00, emotion: 'FOMO', grade: 'F', notes: 'Chased price after big red candle.' },
-            { id: '6', date: '2026-09-15T11:00', strategy: 'Iron Fly', strike: '24100 Straddle', optionType: 'PE', moneyness: 'ATM', expiryType: 'Non-Expiry', action: 'SELL', lots: 8, lotSize: 25, entryPrice: 185.00, exitPrice: 125.00, emotion: 'Disciplined', grade: 'A', notes: 'Held inside breakevens.' },
-            { id: '7', date: '2026-09-17T09:30', strategy: 'Short Straddle', strike: '24150 CE/PE', optionType: 'CE', moneyness: 'ATM', expiryType: '0-DTE Expiry', action: 'SELL', lots: 4, lotSize: 25, entryPrice: 150.00, exitPrice: 185.00, emotion: 'Revenge', grade: 'C', notes: 'Directional spike stopped out leg.' },
-            { id: '8', date: '2026-09-18T13:45', strategy: 'Liquidity Sweep & FVG', strike: '24200 CE', optionType: 'CE', moneyness: 'ITM', expiryType: 'Non-Expiry', action: 'BUY', lots: 4, lotSize: 25, entryPrice: 105.00, exitPrice: 155.00, emotion: 'Disciplined', grade: 'A+', notes: 'Swept PDL and reversed strongly.' }
-        ];
-
-        // Initialize App
-        window.addEventListener('DOMContentLoaded', () => {
-            loadTradesFromStorage();
-            calculateRiskSize();
-            updateChecklist();
-        });
-
-        // Tab Switching Engine
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content, section').forEach(el => {
-                if (el.id.startsWith('tab-')) el.classList.add('hidden');
-            });
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('tab-active'));
-
-            const targetSection = document.getElementById(`tab-${tabId}`);
-            if (targetSection) targetSection.classList.remove('hidden');
-
-            const targetBtn = document.getElementById(`tab-btn-${tabId}`);
-            if (targetBtn) targetBtn.classList.add('tab-active');
-
-            if (tabId === 'dashboard') {
-                renderCharts();
-            }
-        }
-
-        // Calculate Statutory Indian FnO Charges
-        function calculateTax(action, lots, lotSize, entry, exit) {
-            const qty = lots * lotSize;
-            const turnover = (entry + exit) * qty;
-            const sellTurnover = (action === 'BUY' ? exit : entry) * qty;
-
-            const brokerage = 40.00; // Flat ₹20 per executed order
-            const stt = sellTurnover * 0.001; // 0.1% on sell side premium
-            const exchangeFee = turnover * 0.0005; // ~0.05% Exchange turnover charge
-            const gst = (brokerage + exchangeFee) * 0.18; // 18% GST
-            const stampDuty = (action === 'BUY' ? entry : exit) * qty * 0.00003; // 0.003% on buy
-            const sebiFee = turnover * 0.000001;
-
-            const totalCharges = brokerage + stt + exchangeFee + gst + stampDuty + sebiFee;
-            return Math.round(totalCharges * 100) / 100;
-        }
-
-        // Calculate P&L for a single trade
-        function computeTradeMetrics(t) {
-            const qty = t.lots * t.lotSize;
-            let grossPnl = 0;
-            if (t.action === 'BUY') {
-                grossPnl = (t.exitPrice - t.entryPrice) * qty;
-            } else {
-                grossPnl = (t.entryPrice - t.exitPrice) * qty;
-            }
-            const charges = calculateTax(t.action, t.lots, t.lotSize, t.entryPrice, t.exitPrice);
-            const netPnl = grossPnl - charges;
-            return { grossPnl, charges, netPnl, qty };
-        }
-
-        // Load & Save Data
-        function loadTradesFromStorage() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                try {
-                    trades = JSON.parse(saved);
-                } catch(e) {
-                    trades = [...SAMPLE_TRADES];
-                }
-            } else {
-                trades = [...SAMPLE_TRADES];
-                saveToStorage();
-            }
-            applyFilters();
-        }
-
-        function saveToStorage() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
-        }
-
-        function loadSampleData() {
-            trades = [...SAMPLE_TRADES];
-            saveToStorage();
-            applyFilters();
-        }
-
-        function resetData() {
-            if (confirm('Are you sure you want to reset all trades?')) {
-                trades = [];
-                saveToStorage();
-                applyFilters();
-            }
-        }
-
-        // Filter Logic
-        function applyFilters() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const strat = document.getElementById('filterStrategy').value;
-            const outcome = document.getElementById('filterOutcome').value;
-            const type = document.getElementById('filterOptionType').value;
-            const money = document.getElementById('filterMoneyness').value;
-            const expiry = document.getElementById('filterExpiry').value;
-
-            filteredTrades = trades.filter(t => {
-                const metrics = computeTradeMetrics(t);
-                const isWin = metrics.netPnl > 0;
-
-                const matchSearch = t.strike.toLowerCase().includes(search) || (t.notes && t.notes.toLowerCase().includes(search));
-                const matchStrat = strat === 'ALL' || t.strategy === strat;
-                const matchOutcome = outcome === 'ALL' || (outcome === 'WIN' && isWin) || (outcome === 'LOSS' && !isWin);
-                const matchType = type === 'ALL' || t.optionType === type;
-                const matchMoney = money === 'ALL' || t.moneyness === money;
-                const matchExpiry = expiry === 'ALL' || t.expiryType === expiry;
-
-                return matchSearch && matchStrat && matchOutcome && matchType && matchMoney && matchExpiry;
-            });
-
-            // Sort by date descending
-            filteredTrades.sort((a,b) => new Date(b.date) - new Date(a.date));
-
-            updateUI();
-        }
-
-        // Update Dashboard UI & Table
-        function updateUI() {
-            // Update counts
-            document.getElementById('tabTradeCount').innerText = trades.length;
-            document.getElementById('displayedTradeCount').innerText = filteredTrades.length;
-
-            // Global Metrics (Calculated on ALL trades or filtered)
-            let totalNetPnl = 0;
-            let totalGrossPnl = 0;
-            let totalCharges = 0;
-            let wins = 0;
-            let losses = 0;
-            let grossWinSum = 0;
-            let grossLossSum = 0;
-            let bestTrade = 0;
-            let worstTrade = 0;
-
-            let cumPnl = 0;
-            let peak = 0;
-            let maxDrawdown = 0;
-
-            const chronologicalTrades = [...trades].sort((a,b) => new Date(a.date) - new Date(b.date));
-
-            chronologicalTrades.forEach(t => {
-                const m = computeTradeMetrics(t);
-                totalNetPnl += m.netPnl;
-                totalGrossPnl += m.grossPnl;
-                totalCharges += m.charges;
-
-                if (m.netPnl > 0) {
-                    wins++;
-                    grossWinSum += m.netPnl;
-                    if (m.netPnl > bestTrade) bestTrade = m.netPnl;
-                } else {
-                    losses++;
-                    grossLossSum += Math.abs(m.netPnl);
-                    if (m.netPnl < worstTrade) worstTrade = m.netPnl;
-                }
-
-                cumPnl += m.netPnl;
-                if (cumPnl > peak) peak = cumPnl;
-                const dd = peak - cumPnl;
-                if (dd > maxDrawdown) maxDrawdown = dd;
-            });
-
-            const winRate = trades.length > 0 ? Math.round((wins / trades.length) * 100) : 0;
-            const profitFactor = grossLossSum > 0 ? (grossWinSum / grossLossSum).toFixed(2) : (grossWinSum > 0 ? '99.0' : '0.00');
-            const expectancy = trades.length > 0 ? Math.round(totalNetPnl / trades.length) : 0;
-
-            // Header Quick Stats
-            const hNetPnl = document.getElementById('headerNetPnl');
-            hNetPnl.innerText = `₹${totalNetPnl.toLocaleString('en-IN')}`;
-            hNetPnl.className = `font-mono font-bold text-sm ${totalNetPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-            document.getElementById('headerWinRate').innerText = `${winRate}%`;
-
-            // KPI Cards
-            const kpiPnl = document.getElementById('kpiNetPnl');
-            kpiPnl.innerText = `₹${totalNetPnl.toLocaleString('en-IN')}`;
-            kpiPnl.className = `text-lg font-extrabold font-mono mt-1 ${totalNetPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-
-            document.getElementById('kpiWinRate').innerText = `${winRate}%`;
-            document.getElementById('kpiWinRateSub').innerText = `${wins} W / ${losses} L`;
-            document.getElementById('kpiProfitFactor').innerText = profitFactor;
-            
-            const kpiExp = document.getElementById('kpiExpectancy');
-            kpiExp.innerText = `₹${expectancy.toLocaleString('en-IN')}`;
-            kpiExp.className = `text-lg font-extrabold font-mono mt-1 ${expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-
-            document.getElementById('kpiMaxDrawdown').innerText = `₹${maxDrawdown.toLocaleString('en-IN')}`;
-            document.getElementById('kpiCharges').innerText = `₹${Math.round(totalCharges).toLocaleString('en-IN')}`;
-            document.getElementById('kpiBestWorst').innerHTML = `<span class="text-emerald-400">+₹${Math.round(bestTrade)}</span> / <span class="text-rose-400">-₹${Math.round(Math.abs(worstTrade))}</span>`;
-
-            // Table Render
-            renderTable();
-
-            // Render Charts
-            renderCharts();
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('tradeTableBody');
-            const emptyMsg = document.getElementById('emptyTableMessage');
-            tbody.innerHTML = '';
-
-            if (filteredTrades.length === 0) {
-                emptyMsg.classList.remove('hidden');
-                document.getElementById('filteredNetPnl').innerText = '₹0.00';
-                return;
-            } else {
-                emptyMsg.classList.add('hidden');
-            }
-
-            let filteredNetPnlSum = 0;
-
-            filteredTrades.forEach(t => {
-                const m = computeTradeMetrics(t);
-                filteredNetPnlSum += m.netPnl;
-
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-800/40 border-b border-slate-800/60 transition';
-
-                const formattedDate = new Date(t.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                const netPnlColor = m.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
-
-                tr.innerHTML = `
-                    <td class="p-3 text-slate-300 font-sans">${formattedDate}</td>
-                    <td class="p-3 font-semibold text-slate-200 font-sans">${t.strategy}</td>
-                    <td class="p-3 font-bold text-cyan-400">${t.strike} <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">${t.action}</span></td>
-                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.moneyness === 'ITM' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : t.moneyness === 'ATM' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">${t.moneyness}</span></td>
-                    <td class="p-3 text-right">${t.lots} (${m.qty})</td>
-                    <td class="p-3 text-right">₹${t.entryPrice.toFixed(2)}</td>
-                    <td class="p-3 text-right">₹${t.exitPrice.toFixed(2)}</td>
-                    <td class="p-3 text-right ${m.grossPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">₹${m.grossPnl.toLocaleString('en-IN')}</td>
-                    <td class="p-3 text-right text-amber-400/90">₹${m.charges.toFixed(1)}</td>
-                    <td class="p-3 text-right font-bold ${netPnlColor}">₹${m.netPnl.toLocaleString('en-IN')}</td>
-                    <td class="p-3 text-center font-sans"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300">${t.emotion}</span></td>
-                    <td class="p-3 text-center font-bold text-cyan-400">${t.grade}</td>
-                    <td class="p-3 text-center font-sans">
-                        <button onclick="editTrade('${t.id}')" class="text-slate-400 hover:text-cyan-400 px-1"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteTrade('${t.id}')" class="text-slate-400 hover:text-rose-400 px-1"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            const fPnlEl = document.getElementById('filteredNetPnl');
-            fPnlEl.innerText = `₹${filteredNetPnlSum.toLocaleString('en-IN')}`;
-            fPnlEl.className = `font-bold font-mono ${filteredNetPnlSum >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-        }
-
-        // Render Chart.js Visualizations
-        function renderCharts() {
-            const chronological = [...trades].sort((a,b) => new Date(a.date) - new Date(b.date));
-
-            // 1. Equity Curve
-            const equityCtx = document.getElementById('equityChart').getContext('2d');
-            let cumNet = 0;
-            const equityLabels = chronological.map((t, idx) => `T${idx+1}`);
-            const equityData = chronological.map(t => {
-                cumNet += computeTradeMetrics(t).netPnl;
-                return cumNet;
-            });
-
-            if (charts.equity) charts.equity.destroy();
-            charts.equity = new Chart(equityCtx, {
-                type: 'line',
-                data: {
-                    labels: equityLabels,
-                    datasets: [{
-                        label: 'Cumulative Net P&L (₹)',
-                        data: equityData,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#10b981'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
-
-            // 2. Strategy Chart
-            const stratCtx = document.getElementById('strategyChart').getContext('2d');
-            const stratPnlMap = {};
-            trades.forEach(t => {
-                const m = computeTradeMetrics(t);
-                stratPnlMap[t.strategy] = (stratPnlMap[t.strategy] || 0) + m.netPnl;
-            });
-
-            if (charts.strategy) charts.strategy.destroy();
-            charts.strategy = new Chart(stratCtx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(stratPnlMap),
-                    datasets: [{
-                        data: Object.values(stratPnlMap),
-                        backgroundColor: Object.values(stratPnlMap).map(v => v >= 0 ? '#10b981' : '#ef4444')
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
-
-            // 3. Type & Moneyness Doughnut
-            const typeCtx = document.getElementById('typeMoneynessChart').getContext('2d');
-            let cePnl = 0, pePnl = 0;
-            trades.forEach(t => {
-                const m = computeTradeMetrics(t);
-                if (t.optionType === 'CE') cePnl += m.netPnl;
-                else pePnl += m.netPnl;
-            });
-
-            if (charts.type) charts.type.destroy();
-            charts.type = new Chart(typeCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Call Options (CE)', 'Put Options (PE)'],
-                    datasets: [{
-                        data: [Math.max(0, cePnl), Math.max(0, pePnl)],
-                        backgroundColor: ['#06b6d4', '#8b5cf6']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } } }
-                }
-            });
-
-            // 4. Emotion Chart
-            const emotionCtx = document.getElementById('emotionChart').getContext('2d');
-            const emotionMap = {};
-            trades.forEach(t => {
-                const m = computeTradeMetrics(t);
-                emotionMap[t.emotion] = (emotionMap[t.emotion] || 0) + m.netPnl;
-            });
-
-            if (charts.emotion) charts.emotion.destroy();
-            charts.emotion = new Chart(emotionCtx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(emotionMap),
-                    datasets: [{
-                        data: Object.values(emotionMap),
-                        backgroundColor: '#f59e0b'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
-
-            // 5. Expiry Chart
-            const expiryCtx = document.getElementById('expiryChart').getContext('2d');
-            let zeroDtePnl = 0, normalPnl = 0;
-            trades.forEach(t => {
-                const m = computeTradeMetrics(t);
-                if (t.expiryType === '0-DTE Expiry') zeroDtePnl += m.netPnl;
-                else normalPnl += m.netPnl;
-            });
-
-            if (charts.expiry) charts.expiry.destroy();
-            charts.expiry = new Chart(expiryCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['0-DTE Expiry', 'Non-Expiry'],
-                    datasets: [{
-                        data: [zeroDtePnl, normalPnl],
-                        backgroundColor: ['#ef4444', '#10b981']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
-        }
-
-        // Modal Management
-        function openTradeModal() {
-            document.getElementById('tradeForm').reset();
-            document.getElementById('tradeIdInput').value = '';
-            document.getElementById('inputDate').value = new Date().toISOString().slice(0, 16);
-            document.getElementById('modalTitle').innerText = 'Log Nifty Option Trade';
-            document.getElementById('tradeModal').classList.remove('hidden');
-        }
-
-        function closeTradeModal() {
-            document.getElementById('tradeModal').classList.add('hidden');
-        }
-
-        function editTrade(id) {
-            const t = trades.find(item => item.id === id);
-            if (!t) return;
-
-            document.getElementById('tradeIdInput').value = t.id;
-            document.getElementById('inputDate').value = t.date;
-            document.getElementById('inputStrategy').value = t.strategy;
-            document.getElementById('inputStrike').value = t.strike;
-            document.getElementById('inputOptionType').value = t.optionType;
-            document.getElementById('inputMoneyness').value = t.moneyness;
-            document.getElementById('inputExpiryType').value = t.expiryType;
-            document.getElementById('inputAction').value = t.action;
-            document.getElementById('inputLots').value = t.lots;
-            document.getElementById('inputLotSize').value = t.lotSize;
-            document.getElementById('inputEntry').value = t.entryPrice;
-            document.getElementById('inputExit').value = t.exitPrice;
-            document.getElementById('inputEmotion').value = t.emotion;
-            document.getElementById('inputGrade').value = t.grade;
-            document.getElementById('inputNotes').value = t.notes || '';
-
-            document.getElementById('modalTitle').innerText = 'Edit Nifty Trade';
-            document.getElementById('tradeModal').classList.remove('hidden');
-        }
-
-        function deleteTrade(id) {
-            if (confirm('Delete this trade record?')) {
-                trades = trades.filter(t => t.id !== id);
-                saveToStorage();
-                applyFilters();
-            }
-        }
-
-        function saveTrade(e) {
-            e.preventDefault();
-
-            const id = document.getElementById('tradeIdInput').value || Date.now().toString();
-            const newTrade = {
-                id: id,
-                date: document.getElementById('inputDate').value,
-                strategy: document.getElementById('inputStrategy').value,
-                strike: document.getElementById('inputStrike').value,
-                optionType: document.getElementById('inputOptionType').value,
-                moneyness: document.getElementById('inputMoneyness').value,
-                expiryType: document.getElementById('inputExpiryType').value,
-                action: document.getElementById('inputAction').value,
-                lots: parseInt(document.getElementById('inputLots').value) || 1,
-                lotSize: parseInt(document.getElementById('inputLotSize').value) || 25,
-                entryPrice: parseFloat(document.getElementById('inputEntry').value) || 0,
-                exitPrice: parseFloat(document.getElementById('inputExit').value) || 0,
-                emotion: document.getElementById('inputEmotion').value,
-                grade: document.getElementById('inputGrade').value,
-                notes: document.getElementById('inputNotes').value
-            };
-
-            const existingIdx = trades.findIndex(t => t.id === id);
-            if (existingIdx >= 0) {
-                trades[existingIdx] = newTrade;
-            } else {
-                trades.push(newTrade);
-            }
-
-            saveToStorage();
-            closeTradeModal();
-            applyFilters();
-        }
-
-        function prefillStrategy(stratName) {
-            openTradeModal();
-            document.getElementById('inputStrategy').value = stratName;
-        }
-
-        // Position Size & Risk Calculator
-        function calculateRiskSize() {
-            const capital = parseFloat(document.getElementById('calcCapital').value) || 0;
-            const riskPct = parseFloat(document.getElementById('calcRiskPct').value) || 0;
-            const slPts = parseFloat(document.getElementById('calcSlPoints').value) || 1;
-            const price = parseFloat(document.getElementById('calcOptionPrice').value) || 1;
-            const lotSize = parseInt(document.getElementById('calcLotSize').value) || 25;
-
-            const maxRiskRupees = capital * (riskPct / 100);
-            const riskPerLot = slPts * lotSize;
-            const lotCount = Math.max(1, Math.floor(maxRiskRupees / riskPerLot));
-            const totalQty = lotCount * lotSize;
-            const capitalNeeded = totalQty * price;
-
-            document.getElementById('resMaxRisk').innerText = `₹${Math.round(maxRiskRupees).toLocaleString('en-IN')}`;
-            document.getElementById('resLotCount').innerText = `${lotCount} Lots`;
-            document.getElementById('resQty').innerText = `${totalQty} Qty`;
-            document.getElementById('resCapitalNeeded').innerText = `₹${Math.round(capitalNeeded).toLocaleString('en-IN')}`;
-            document.getElementById('resRiskPctText').innerText = `${riskPct}%`;
-        }
-
-        // Pre-Trade Checklist Gauge
-        function updateChecklist() {
-            let count = 0;
-            for (let i = 1; i <= 5; i++) {
-                if (document.getElementById(`chk${i}`).checked) count++;
-            }
-
-            const pct = Math.round((count / 5) * 100);
-            document.getElementById('chkScore').innerText = `${pct}%`;
-            document.getElementById('chkBar').style.width = `${pct}%`;
-
-            const statusEl = document.getElementById('chkStatus');
-            const scoreEl = document.getElementById('chkScore');
-            const barEl = document.getElementById('chkBar');
-
-            if (pct === 100) {
-                statusEl.innerText = 'READY TO TRADE';
-                statusEl.className = 'text-xs font-bold text-emerald-400 uppercase tracking-wider';
-                scoreEl.className = 'text-2xl font-extrabold font-mono text-emerald-400';
-                barEl.className = 'bg-emerald-500 h-full transition-all duration-300';
-            } else {
-                statusEl.innerText = 'DO NOT TRADE';
-                statusEl.className = 'text-xs font-bold text-rose-400 uppercase tracking-wider';
-                scoreEl.className = 'text-2xl font-extrabold font-mono text-rose-400';
-                barEl.className = 'bg-rose-500 h-full transition-all duration-300';
-            }
-        }
-
-        // Export & Import JSON
-        function exportJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trades, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `nifty_journal_backup_${new Date().toISOString().slice(0,10)}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-        }
-
-        function importJSON(event) {
-            const fileReader = new FileReader();
-            fileReader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    if (Array.isArray(importedData)) {
-                        trades = importedData;
-                        saveToStorage();
-                        applyFilters();
-                        alert('Trades successfully imported!');
-                    }
-                } catch(err) {
-                    alert('Invalid JSON file format.');
-                }
-            };
-            fileReader.readAsText(event.target.files[0]);
-        }
-    </script>
 </body>
 </html>
